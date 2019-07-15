@@ -23,10 +23,12 @@ use ApiPlatform\Core\GraphQl\Resolver\ResourceAccessCheckerTrait;
 use ApiPlatform\Core\GraphQl\Serializer\ItemNormalizer;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Security\ResourceAccessCheckerInterface;
+use ApiPlatform\Core\Event\ContextEvent;
 use GraphQL\Error\Error;
 use GraphQL\Type\Definition\ResolveInfo;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Creates a function retrieving a collection to resolve a GraphQL query or a field returned by a mutation.
@@ -49,13 +51,15 @@ final class CollectionResolverFactory implements ResolverFactoryInterface
     private $requestStack;
     private $paginationEnabled;
     private $resourceMetadataFactory;
+    protected $eventDispatcher;
 
-    public function __construct(CollectionDataProviderInterface $collectionDataProvider, SubresourceDataProviderInterface $subresourceDataProvider, NormalizerInterface $normalizer, IdentifiersExtractorInterface $identifiersExtractor, ResourceMetadataFactoryInterface $resourceMetadataFactory, ResourceAccessCheckerInterface $resourceAccessChecker = null, RequestStack $requestStack = null, bool $paginationEnabled = false)
+    public function __construct(CollectionDataProviderInterface $collectionDataProvider, SubresourceDataProviderInterface $subresourceDataProvider, NormalizerInterface $normalizer, IdentifiersExtractorInterface $identifiersExtractor, ResourceMetadataFactoryInterface $resourceMetadataFactory, EventDispatcherInterface $eventDispatcher, ResourceAccessCheckerInterface $resourceAccessChecker = null, RequestStack $requestStack = null, bool $paginationEnabled = false)
     {
         $this->subresourceDataProvider = $subresourceDataProvider;
         $this->collectionDataProvider = $collectionDataProvider;
         $this->normalizer = $normalizer;
         $this->identifiersExtractor = $identifiersExtractor;
+        $this->eventDispatcher = $eventDispatcher;
         $this->resourceAccessChecker = $resourceAccessChecker;
         $this->requestStack = $requestStack;
         $this->paginationEnabled = $paginationEnabled;
@@ -83,6 +87,8 @@ final class CollectionResolverFactory implements ResolverFactoryInterface
             $dataProviderContext['filters'] = $this->getNormalizedFilters($args);
             $dataProviderContext['graphql'] = true;
             $normalizationContext['resource_class'] = $resourceClass;
+
+            $this->eventDispatcher->dispatch(ContextEvent::NAME, new ContextEvent($normalizationContext, $false));
 
             if (isset($rootClass, $source[$rootProperty = $info->fieldName], $source[ItemNormalizer::ITEM_KEY])) {
                 $rootResolvedFields = $this->identifiersExtractor->getIdentifiersFromItem(unserialize($source[ItemNormalizer::ITEM_KEY]));

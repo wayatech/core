@@ -20,6 +20,8 @@ use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Security\ResourceAccessCheckerInterface;
 use ApiPlatform\Core\Util\ClassInfoTrait;
 use GraphQL\Type\Definition\ResolveInfo;
+use ApiPlatform\Core\Event\ContextEvent;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 /**
@@ -41,10 +43,11 @@ final class ItemResolver
     private $normalizer;
     private $resourceMetadataFactory;
 
-    public function __construct(IriConverterInterface $iriConverter, NormalizerInterface $normalizer, ResourceMetadataFactoryInterface $resourceMetadataFactory, ResourceAccessCheckerInterface $resourceAccessChecker = null)
+    public function __construct(IriConverterInterface $iriConverter, NormalizerInterface $normalizer, EventDispatcherInterface $eventDispatcher, ResourceMetadataFactoryInterface $resourceMetadataFactory, ResourceAccessCheckerInterface $resourceAccessChecker = null)
     {
         $this->iriConverter = $iriConverter;
         $this->normalizer = $normalizer;
+        $this->eventDispatcher = $eventDispatcher;
         $this->resourceMetadataFactory = $resourceMetadataFactory;
         $this->resourceAccessChecker = $resourceAccessChecker;
     }
@@ -76,6 +79,8 @@ final class ItemResolver
 
         $normalizationContext = $resourceMetadata->getGraphqlAttribute('query', 'normalization_context', [], true);
         $normalizationContext['resource_class'] = $resourceClass;
+
+        $this->eventDispatcher->dispatch(ContextEvent::NAME, new ContextEvent($normalizationContext, $false));
 
         return $this->normalizer->normalize($item, ItemNormalizer::FORMAT, $normalizationContext + $baseNormalizationContext);
     }

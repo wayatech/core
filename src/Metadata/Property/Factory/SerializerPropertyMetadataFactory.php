@@ -18,7 +18,9 @@ use ApiPlatform\Core\Exception\ResourceClassNotFoundException;
 use ApiPlatform\Core\Metadata\Property\PropertyMetadata;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Util\ResourceClassInfoTrait;
+use ApiPlatform\Core\Event\ContextEvent;
 use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactoryInterface as SerializerClassMetadataFactoryInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Populates read/write and link status using serialization groups.
@@ -32,13 +34,15 @@ final class SerializerPropertyMetadataFactory implements PropertyMetadataFactory
 
     private $serializerClassMetadataFactory;
     private $decorated;
+    protected $eventDispatcher;
 
-    public function __construct(ResourceMetadataFactoryInterface $resourceMetadataFactory, SerializerClassMetadataFactoryInterface $serializerClassMetadataFactory, PropertyMetadataFactoryInterface $decorated, ResourceClassResolverInterface $resourceClassResolver = null)
+    public function __construct(ResourceMetadataFactoryInterface $resourceMetadataFactory, SerializerClassMetadataFactoryInterface $serializerClassMetadataFactory, EventDispatcherInterface $eventDispatcher, PropertyMetadataFactoryInterface $decorated, ResourceClassResolverInterface $resourceClassResolver = null)
     {
         $this->resourceMetadataFactory = $resourceMetadataFactory;
         $this->serializerClassMetadataFactory = $serializerClassMetadataFactory;
         $this->decorated = $decorated;
         $this->resourceClassResolver = $resourceClassResolver;
+        $this->eventDispatcher = $eventDispatcher;
     }
 
     /**
@@ -172,6 +176,8 @@ final class SerializerPropertyMetadataFactory implements PropertyMetadataFactory
             $normalizationContext = $resourceMetadata->getAttribute('normalization_context');
             $denormalizationContext = $resourceMetadata->getAttribute('denormalization_context');
         }
+
+        $this->eventDispatcher->dispatch(ContextEvent::NAME, new ContextEvent($normalizationContext, $denormalizationContext));
 
         return [
             isset($normalizationContext['groups']) ? (array) $normalizationContext['groups'] : null,

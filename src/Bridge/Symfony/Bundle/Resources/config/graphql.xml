@@ -15,6 +15,7 @@
             <argument type="service" id="serializer" />
             <argument type="service" id="api_platform.identifiers_extractor.cached" />
             <argument type="service" id="api_platform.metadata.resource.metadata_factory" />
+            <argument type="service" id="event_dispatcher" />
             <argument type="service" id="api_platform.security.resource_access_checker" on-invalid="null" />
             <argument type="service" id="request_stack" />
             <argument>%api_platform.collection.pagination.enabled%</argument>
@@ -32,6 +33,7 @@
         <service id="api_platform.graphql.resolver.item" class="ApiPlatform\Core\GraphQl\Resolver\ItemResolver" public="false">
             <argument type="service" id="api_platform.iri_converter" />
             <argument type="service" id="serializer" />
+            <argument type="service" id="event_dispatcher" />
             <argument type="service" id="api_platform.metadata.resource.metadata_factory" />
             <argument type="service" id="api_platform.security.resource_access_checker" on-invalid="ignore" />
         </service>
