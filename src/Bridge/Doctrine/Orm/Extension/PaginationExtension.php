@@ -195,6 +195,7 @@ final class PaginationExtension implements ContextAwareQueryResultCollectionExte
             return null;
         }
 
+        dump($collectionArgs[$resourceClass]['limit']); die;
         $itemsPerPage = $resourceMetadata->getCollectionOperationAttribute($operationName, 'pagination_items_per_page', $this->itemsPerPage, true);
         if ($request->attributes->getBoolean('_graphql', false)) {
             $collectionArgs = $request->attributes->get('_graphql_collections_args', []);

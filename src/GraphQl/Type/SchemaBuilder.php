@@ -224,6 +224,14 @@ final class SchemaBuilder implements SchemaBuilderInterface
             if (!$input && null === $mutationName && !$isStandardGraphqlType && $this->isCollection($type)) {
                 if ($this->paginationEnabled) {
                     $args = [
+                        'offset' => [
+                            'type' => GraphQLType::int(),
+                            'description' => 'Page number',
+                        ],
+                        'limit' => [
+                            'type' => GraphQLType::int(),
+                            'description' => 'Number of element',
+                        ],
                         'first' => [
                             'type' => GraphQLType::int(),
                             'description' => 'Returns the first n elements from the list.',

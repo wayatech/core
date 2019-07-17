@@ -70,6 +70,10 @@ final class Pagination
      */
     public function getOffset(string $resourceClass = null, string $operationName = null, array $context = []): int
     {
+        if ($offset = $this->getParameterFromContext($context, 'offset')) {
+            return $offset;
+        }
+
         if (($context['graphql'] ?? false) && null !== ($after = $this->getParameterFromContext($context, 'after'))) {
             return false === ($after = base64_decode($after, true)) ? 0 : (int) $after + 1;
         }
