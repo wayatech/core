@@ -30,6 +30,8 @@ use GraphQL\Error\Error;
 use GraphQL\Type\Definition\ResolveInfo;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use ApiPlatform\Core\Event\ContextEvent;
 
 /**
  * Creates a function resolving a GraphQL mutation of an item.
@@ -51,7 +53,7 @@ final class ItemMutationResolverFactory implements ResolverFactoryInterface
     private $resourceAccessChecker;
     private $validator;
 
-    public function __construct(IriConverterInterface $iriConverter, DataPersisterInterface $dataPersister, NormalizerInterface $normalizer, ResourceMetadataFactoryInterface $resourceMetadataFactory, ResourceAccessCheckerInterface $resourceAccessChecker = null, ValidatorInterface $validator = null)
+    public function __construct(IriConverterInterface $iriConverter, DataPersisterInterface $dataPersister, NormalizerInterface $normalizer,  EventDispatcherInterface $eventDispatcher, ResourceMetadataFactoryInterface $resourceMetadataFactory, ResourceAccessCheckerInterface $resourceAccessChecker = null, ValidatorInterface $validator = null)
     {
         if (!$normalizer instanceof DenormalizerInterface) {
             throw new InvalidArgumentException(sprintf('The normalizer must implements the "%s" interface', DenormalizerInterface::class));
@@ -60,6 +62,7 @@ final class ItemMutationResolverFactory implements ResolverFactoryInterface
         $this->iriConverter = $iriConverter;
         $this->dataPersister = $dataPersister;
         $this->normalizer = $normalizer;
+        $this->eventDispatcher = $eventDispatcher;
         $this->resourceMetadataFactory = $resourceMetadataFactory;
         $this->resourceAccessChecker = $resourceAccessChecker;
         $this->validator = $validator;
@@ -79,8 +82,11 @@ final class ItemMutationResolverFactory implements ResolverFactoryInterface
             $wrapFieldName = lcfirst($resourceMetadata->getShortName());
             $baseNormalizationContext = $resourceMetadata->getGraphqlAttribute($operationName ?? '', 'normalization_context', [], true);
             $baseNormalizationContext['attributes'] = $this->fieldsToAttributes($info)[$wrapFieldName] ?? [];
+
             $normalizationContext = $baseNormalizationContext;
             $normalizationContext['resource_class'] = $resourceClass;
+
+            $this->eventDispatcher->dispatch(ContextEvent::NAME, new ContextEvent($normalizationContext, $false));
 
             if (isset($args['input']['id'])) {
                 try {
